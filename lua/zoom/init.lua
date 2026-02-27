@@ -59,6 +59,8 @@ function M.zoom()
 		-- Maximize current window
 		vim.cmd("wincmd _")
 		vim.cmd("wincmd |")
+
+		vim.api.nvim_exec_autocmds("User", { pattern = "ZoomChanged" })
 	end
 end
 
@@ -74,6 +76,8 @@ function M.restore()
 	state.saved_layout = nil
 	state.zoomed_buf = nil
 	state.original_wins = {}
+
+	vim.api.nvim_exec_autocmds("User", { pattern = "ZoomChanged" })
 end
 
 --- Check if currently zoomed
@@ -109,6 +113,7 @@ function M.setup(opts)
 					state.saved_layout = nil
 					state.zoomed_buf = nil
 					state.original_wins = {}
+					vim.api.nvim_exec_autocmds("User", { pattern = "ZoomChanged" })
 				end
 			end
 		end,
