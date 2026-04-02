@@ -56,4 +56,4 @@ end
 
 ## License
 
-[MIT](LICENSE)
+[0BSD](LICENSE)
