@@ -4,6 +4,7 @@
 local autocmd_events = {}
 local user_commands = {}
 local notifications = {}
+local keymaps = {}
 
 _G.vim = {
 	fn = {
@@ -12,6 +13,7 @@ _G.vim = {
 			if arg == "$" then return 2 end
 			return 1
 		end,
+		has = function() return 1 end,
 	},
 	cmd = function() end,
 	api = {
@@ -32,19 +34,33 @@ _G.vim = {
 			table.insert(_G._zoom_test_events, { event = event, pattern = opts.pattern })
 		end,
 	},
+	keymap = {
+		set = function(mode, lhs, rhs, opts)
+			table.insert(keymaps, { mode = mode, lhs = lhs, rhs = rhs, opts = opts })
+		end,
+	},
 	notify = function(msg, level)
 		table.insert(notifications, { msg = msg, level = level })
 	end,
 	log = { levels = { INFO = 1, WARN = 2, ERROR = 3 } },
 	g = {},
+	health = {
+		start = function() end,
+		ok = function() end,
+		warn = function() end,
+		error = function() end,
+		info = function() end,
+	},
 }
 
 -- Reload module fresh for each test
 local function load_zoom()
 	package.loaded["zoom"] = nil
 	package.loaded["zoom.init"] = nil
+	package.loaded["zoom.health"] = nil
 	_G._zoom_test_events = {}
 	notifications = {}
+	keymaps = {}
 	return require("zoom")
 end
 
@@ -126,6 +142,43 @@ describe("zoom.nvim", function()
 			assert.is_true(zoom.is_zoomed())
 			zoom.toggle()
 			assert.is_false(zoom.is_zoomed())
+		end)
+	end)
+
+	describe("setup options", function()
+		it("binds keymap when key option is set", function()
+			zoom = load_zoom()
+			zoom.setup({ key = "<leader>z" })
+			assert.equals(1, #keymaps)
+			assert.equals("n", keymaps[1].mode)
+			assert.equals("<leader>z", keymaps[1].lhs)
+		end)
+
+		it("does not bind keymap when key is nil", function()
+			zoom = load_zoom()
+			zoom.setup({})
+			assert.equals(0, #keymaps)
+		end)
+
+		it("suppresses notification when notify is false", function()
+			zoom = load_zoom()
+			zoom.setup({ notify = false })
+			vim.fn.winnr = function() return 1 end
+			zoom.zoom()
+			assert.equals(0, #notifications)
+			-- restore mock
+			vim.fn.winnr = function(arg)
+				if arg == "$" then return 2 end
+				return 1
+			end
+		end)
+	end)
+
+	describe("health", function()
+		it("loads health module without error", function()
+			local ok, health = pcall(require, "zoom.health")
+			assert.is_true(ok)
+			assert.is_not_nil(health.check)
 		end)
 	end)
 end)

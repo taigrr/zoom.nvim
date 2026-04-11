@@ -54,6 +54,19 @@ local function zoom_status()
 end
 ```
 
+## Configuration
+
+```lua
+require('zoom').setup({
+  key = '<leader>z',   -- optional: bind a keymap automatically
+  notify = true,       -- optional: show notifications (default true)
+})
+```
+
+## Health Check
+
+Run `:checkhealth zoom` to verify your installation.
+
 ## License
 
-[MIT](LICENSE)
+[0BSD](LICENSE)

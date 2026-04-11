@@ -1,3 +1,7 @@
+---@class ZoomOpts
+---@field key string|nil Keymap to bind toggle (e.g. "<leader>z")
+---@field notify boolean Whether to show notifications (default true)
+
 ---@class ZoomState
 ---@field is_zoomed boolean
 ---@field saved_layout string|nil
@@ -5,12 +9,18 @@
 ---@field original_wins table<integer, boolean>
 
 ---@class ZoomModule
----@field setup fun(opts?: table)
+---@field setup fun(opts?: ZoomOpts)
 ---@field zoom fun()
 ---@field restore fun()
 ---@field toggle fun()
 ---@field is_zoomed fun(): boolean
 local M = {}
+
+---@type ZoomOpts
+local config = {
+	key = nil,
+	notify = true,
+}
 
 ---@type ZoomState
 local state = {
@@ -44,7 +54,9 @@ function M.zoom()
 		-- Save layout and zoom
 		if vim.fn.winnr("$") == 1 then
 			-- Only one window, nothing to zoom
-			vim.notify("Already at single window", vim.log.levels.INFO)
+			if config.notify then
+				vim.notify("Already at single window", vim.log.levels.INFO)
+			end
 			return
 		end
 
@@ -93,14 +105,23 @@ function M.toggle()
 end
 
 --- Initialize the plugin
----@param opts? table
+---@param opts? ZoomOpts
 ---@return nil
 function M.setup(opts)
 	opts = opts or {}
 
+	-- Merge user options into config
+	if opts.key ~= nil then config.key = opts.key end
+	if opts.notify ~= nil then config.notify = opts.notify end
+
 	-- Create user command
 	vim.api.nvim_create_user_command("ZoomToggle", M.toggle, { desc = "Toggle window zoom" })
 	vim.api.nvim_create_user_command("ZoomRestore", M.restore, { desc = "Restore window layout" })
+
+	-- Bind keymap if configured
+	if config.key then
+		vim.keymap.set("n", config.key, M.toggle, { desc = "Toggle window zoom", silent = true })
+	end
 
 	-- Reset state only if a window from the original layout closes
 	vim.api.nvim_create_autocmd("WinClosed", {
