@@ -8,11 +8,19 @@
 
 ```
 zoom.nvim/
+├── .github/workflows/
+│   └── test.yml       # CI: busted tests + luacheck lint
 ├── lua/zoom/
-│   └── init.lua      # Main plugin module (API, state, setup)
+│   └── init.lua       # Main plugin module (API, state, setup)
 ├── plugin/
-│   └── zoom.lua      # Plugin loader (prevents double-loading)
-└── AGENTS.md
+│   └── zoom.lua       # Plugin loader (prevents double-loading)
+├── tests/
+│   └── zoom_spec.lua  # Unit tests (busted + vim mocks)
+├── .busted            # Busted config (Lua path setup)
+├── AGENTS.md
+├── LICENSE            # 0BSD
+├── Makefile           # `make test`
+└── README.md
 ```
 
 ## Installation & Usage
@@ -85,11 +93,15 @@ State is reset when:
 
 ## Testing
 
-No test framework is set up. To manually test:
-1. Open Neovim with this plugin loaded
-2. Split windows (`:vs`, `:sp`)
-3. Call `:ZoomToggle` and verify maximization
-4. Call `:ZoomToggle` again and verify restore
+Tests use [busted](https://lunarmodules.github.io/busted/) with vim API mocks:
+
+```bash
+make test
+```
+
+Test file: `tests/zoom_spec.lua` — mocks `vim` globals and validates zoom/restore/toggle behavior.
+
+CI runs tests and linting via GitHub Actions on push/PR to master.
 
 ## Development
 
