@@ -25,7 +25,7 @@ _G.vim = {
 		nvim_create_autocmd = function(event, opts)
 			table.insert(autocmd_events, { event = event, opts = opts })
 		end,
-		nvim_create_augroup = function(name, opts)
+		nvim_create_augroup = function(name, _)
 			return name
 		end,
 		nvim_exec_autocmds = function(event, opts)
@@ -158,6 +158,27 @@ describe("zoom.nvim", function()
 			zoom = load_zoom()
 			zoom.setup({})
 			assert.equals(0, #keymaps)
+		end)
+
+		it("resets keymap option back to default on later setup calls", function()
+			zoom = load_zoom()
+			zoom.setup({ key = "<leader>z" })
+			zoom.setup({})
+			assert.equals(1, #keymaps)
+		end)
+
+		it("resets notify option back to default on later setup calls", function()
+			zoom = load_zoom()
+			zoom.setup({ notify = false })
+			zoom.setup({})
+			vim.fn.winnr = function() return 1 end
+			zoom.zoom()
+			assert.equals(1, #notifications)
+			assert.equals("Already at single window", notifications[1].msg)
+			vim.fn.winnr = function(arg)
+				if arg == "$" then return 2 end
+				return 1
+			end
 		end)
 
 		it("suppresses notification when notify is false", function()

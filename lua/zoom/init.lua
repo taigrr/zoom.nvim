@@ -17,10 +17,24 @@
 local M = {}
 
 ---@type ZoomOpts
-local config = {
+local default_config = {
 	key = nil,
 	notify = true,
 }
+
+local function merge_opts(defaults, opts)
+	local merged = {}
+	for key, value in pairs(defaults) do
+		merged[key] = value
+	end
+	for key, value in pairs(opts or {}) do
+		merged[key] = value
+	end
+	return merged
+end
+
+---@type ZoomOpts
+local config = merge_opts(default_config)
 
 ---@type ZoomState
 local state = {
@@ -109,10 +123,7 @@ end
 ---@return nil
 function M.setup(opts)
 	opts = opts or {}
-
-	-- Merge user options into config
-	if opts.key ~= nil then config.key = opts.key end
-	if opts.notify ~= nil then config.notify = opts.notify end
+	config = merge_opts(default_config, opts)
 
 	-- Create user command
 	vim.api.nvim_create_user_command("ZoomToggle", M.toggle, { desc = "Toggle window zoom" })
