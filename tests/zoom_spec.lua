@@ -5,6 +5,7 @@ local autocmd_events = {}
 local user_commands = {}
 local notifications = {}
 local keymaps = {}
+local deleted_keymaps = {}
 
 _G.vim = {
 	fn = {
@@ -38,6 +39,9 @@ _G.vim = {
 		set = function(mode, lhs, rhs, opts)
 			table.insert(keymaps, { mode = mode, lhs = lhs, rhs = rhs, opts = opts })
 		end,
+		del = function(mode, lhs)
+			table.insert(deleted_keymaps, { mode = mode, lhs = lhs })
+		end,
 	},
 	notify = function(msg, level)
 		table.insert(notifications, { msg = msg, level = level })
@@ -61,6 +65,7 @@ local function load_zoom()
 	_G._zoom_test_events = {}
 	notifications = {}
 	keymaps = {}
+	deleted_keymaps = {}
 	return require("zoom")
 end
 
@@ -179,6 +184,24 @@ describe("zoom.nvim", function()
 				if arg == "$" then return 2 end
 				return 1
 			end
+		end)
+
+		it("removes the previous keymap when setup changes it", function()
+			zoom = load_zoom()
+			zoom.setup({ key = "<leader>z" })
+			zoom.setup({ key = "gz" })
+			assert.equals(1, #deleted_keymaps)
+			assert.equals("n", deleted_keymaps[1].mode)
+			assert.equals("<leader>z", deleted_keymaps[1].lhs)
+			assert.equals("gz", keymaps[#keymaps].lhs)
+		end)
+
+		it("removes the previous keymap when setup resets to defaults", function()
+			zoom = load_zoom()
+			zoom.setup({ key = "<leader>z" })
+			zoom.setup({})
+			assert.equals(1, #deleted_keymaps)
+			assert.equals("<leader>z", deleted_keymaps[1].lhs)
 		end)
 
 		it("suppresses notification when notify is false", function()
