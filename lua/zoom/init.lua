@@ -36,6 +36,8 @@ end
 ---@type ZoomOpts
 local config = merge_opts(default_config)
 
+local current_keymap = nil
+
 ---@type ZoomState
 local state = {
 	is_zoomed = false,
@@ -123,11 +125,17 @@ end
 ---@return nil
 function M.setup(opts)
 	opts = opts or {}
+	local previous_keymap = current_keymap
 	config = merge_opts(default_config, opts)
+	current_keymap = config.key
 
 	-- Create user command
 	vim.api.nvim_create_user_command("ZoomToggle", M.toggle, { desc = "Toggle window zoom" })
 	vim.api.nvim_create_user_command("ZoomRestore", M.restore, { desc = "Restore window layout" })
+
+	if previous_keymap and previous_keymap ~= current_keymap then
+		vim.keymap.del("n", previous_keymap)
+	end
 
 	-- Bind keymap if configured
 	if config.key then
