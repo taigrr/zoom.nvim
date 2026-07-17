@@ -204,6 +204,22 @@ describe("zoom.nvim", function()
 			assert.equals("<leader>z", deleted_keymaps[1].lhs)
 		end)
 
+		it("tolerates an already-removed previous keymap", function()
+			zoom = load_zoom()
+			zoom.setup({ key = "<leader>z" })
+
+			local original_del = vim.keymap.del
+			vim.keymap.del = function()
+				error("not found")
+			end
+
+			assert.has_no.errors(function()
+				zoom.setup({})
+			end)
+
+			vim.keymap.del = original_del
+		end)
+
 		it("suppresses notification when notify is false", function()
 			zoom = load_zoom()
 			zoom.setup({ notify = false })
