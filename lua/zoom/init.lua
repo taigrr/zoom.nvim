@@ -134,8 +134,8 @@ function M.setup(opts)
 	current_keymap = config.key
 
 	-- Create user command
-	vim.api.nvim_create_user_command("ZoomToggle", M.toggle, { desc = "Toggle window zoom" })
-	vim.api.nvim_create_user_command("ZoomRestore", M.restore, { desc = "Restore window layout" })
+	vim.api.nvim_create_user_command("ZoomToggle", M.toggle, { desc = "Toggle window zoom", force = true })
+	vim.api.nvim_create_user_command("ZoomRestore", M.restore, { desc = "Restore window layout", force = true })
 
 	if previous_keymap and previous_keymap ~= current_keymap then
 		delete_keymap(previous_keymap)

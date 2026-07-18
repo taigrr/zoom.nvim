@@ -21,6 +21,9 @@ _G.vim = {
 		nvim_get_current_buf = function() return 1 end,
 		nvim_list_wins = function() return { 1000, 1001 } end,
 		nvim_create_user_command = function(name, fn, opts)
+			if user_commands[name] and not opts.force then
+				error("Command already exists: " .. name)
+			end
 			user_commands[name] = { fn = fn, opts = opts }
 		end,
 		nvim_create_autocmd = function(event, opts)
@@ -63,6 +66,8 @@ local function load_zoom()
 	package.loaded["zoom.init"] = nil
 	package.loaded["zoom.health"] = nil
 	_G._zoom_test_events = {}
+	user_commands = {}
+	autocmd_events = {}
 	notifications = {}
 	keymaps = {}
 	deleted_keymaps = {}
@@ -84,6 +89,14 @@ describe("zoom.nvim", function()
 
 		it("creates ZoomRestore command", function()
 			assert.is_not_nil(user_commands["ZoomRestore"])
+		end)
+
+		it("can be called repeatedly without duplicate command errors", function()
+			assert.has_no.errors(function()
+				zoom.setup()
+			end)
+			assert.is_true(user_commands["ZoomToggle"].opts.force)
+			assert.is_true(user_commands["ZoomRestore"].opts.force)
 		end)
 	end)
 
