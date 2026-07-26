@@ -65,12 +65,32 @@ local function load_zoom()
 	package.loaded["zoom"] = nil
 	package.loaded["zoom.init"] = nil
 	package.loaded["zoom.health"] = nil
+	package.loaded["health"] = nil
 	_G._zoom_test_events = {}
 	user_commands = {}
 	autocmd_events = {}
 	notifications = {}
 	keymaps = {}
 	deleted_keymaps = {}
+	-- Restore pristine mocks so per-test monkey-patches never leak, even if a
+	-- prior test failed before restoring them.
+	vim.fn.winnr = function(arg)
+		if arg == "$" then return 2 end
+		return 1
+	end
+	vim.keymap.set = function(mode, lhs, rhs, opts)
+		table.insert(keymaps, { mode = mode, lhs = lhs, rhs = rhs, opts = opts })
+	end
+	vim.keymap.del = function(mode, lhs)
+		table.insert(deleted_keymaps, { mode = mode, lhs = lhs })
+	end
+	vim.health = {
+		start = function() end,
+		ok = function() end,
+		warn = function() end,
+		error = function() end,
+		info = function() end,
+	}
 	return require("zoom")
 end
 
@@ -287,11 +307,13 @@ describe("zoom.nvim", function()
 			assert.equals(0, #warnings)
 		end)
 
-		it("falls back to report_* API on Neovim 0.7", function()
+		it("falls back to the health module on Neovim 0.7 (no vim.health)", function()
 			package.loaded["zoom.health"] = nil
+			package.loaded["health"] = nil
 			local called = false
 			local original = vim.health
-			vim.health = {
+			vim.health = nil
+			package.loaded["health"] = {
 				report_start = function() end,
 				report_ok = function() called = true end,
 				report_warn = function() end,
@@ -304,6 +326,22 @@ describe("zoom.nvim", function()
 			end)
 			assert.is_true(called)
 			vim.health = original
+			package.loaded["health"] = nil
+			package.loaded["zoom.health"] = nil
+		end)
+
+		it("degrades gracefully when no health API is available", function()
+			package.loaded["zoom.health"] = nil
+			package.loaded["health"] = nil
+			local original = vim.health
+			vim.health = nil
+			package.loaded["health"] = {}
+			local health = require("zoom.health")
+			assert.has_no.errors(function()
+				health.check()
+			end)
+			vim.health = original
+			package.loaded["health"] = nil
 			package.loaded["zoom.health"] = nil
 		end)
 	end)

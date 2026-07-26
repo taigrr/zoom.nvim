@@ -1,17 +1,28 @@
 local M = {}
 
--- Feature-detect the health API: Neovim 0.7 exposes the report_* names,
--- 0.8+ adds the short aliases. Support both so :checkhealth works on 0.7+.
-local health = vim.health or {}
-local h = {
-	start = health.start or health.report_start,
-	ok = health.ok or health.report_ok,
-	warn = health.warn or health.report_warn,
-	error = health.error or health.report_error,
-	info = health.info or health.report_info,
-}
+-- Resolve the health API at call time. Neovim <0.8 has no `vim.health` table
+-- (the report_* functions live in the `health` module); 0.8-0.9 expose
+-- report_* on `vim.health`; 0.10+ adds the short aliases. Support all three.
+local function get_health()
+	local health = vim.health
+	if not health then
+		local ok, mod = pcall(require, "health")
+		health = ok and mod or {}
+	end
+	return {
+		start = health.start or health.report_start,
+		ok = health.ok or health.report_ok,
+		warn = health.warn or health.report_warn,
+		error = health.error or health.report_error,
+		info = health.info or health.report_info,
+	}
+end
 
 function M.check()
+	local h = get_health()
+	if not h.start then
+		return
+	end
 	h.start("zoom.nvim")
 
 	-- Check Neovim version (needs 0.7+ for nvim_create_user_command / vim.keymap)
