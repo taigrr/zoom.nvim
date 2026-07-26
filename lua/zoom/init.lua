@@ -129,6 +129,7 @@ end
 ---@return nil
 function M.setup(opts)
 	opts = opts or {}
+	M._setup_called = true
 	local previous_keymap = current_keymap
 	config = merge_opts(default_config, opts)
 	current_keymap = config.key

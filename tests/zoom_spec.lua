@@ -253,5 +253,58 @@ describe("zoom.nvim", function()
 			assert.is_true(ok)
 			assert.is_not_nil(health.check)
 		end)
+
+		it("runs check() without error", function()
+			zoom = load_zoom()
+			local health = require("zoom.health")
+			assert.has_no.errors(function()
+				health.check()
+			end)
+		end)
+
+		it("warns when setup() was not called", function()
+			zoom = load_zoom()
+			local warnings = {}
+			local original = vim.health.warn
+			vim.health.warn = function(msg)
+				table.insert(warnings, msg)
+			end
+			require("zoom.health").check()
+			vim.health.warn = original
+			assert.is_true(#warnings > 0)
+		end)
+
+		it("reports ok when setup() was called", function()
+			zoom = load_zoom()
+			zoom.setup()
+			local warnings = {}
+			local original = vim.health.warn
+			vim.health.warn = function(msg)
+				table.insert(warnings, msg)
+			end
+			require("zoom.health").check()
+			vim.health.warn = original
+			assert.equals(0, #warnings)
+		end)
+
+		it("falls back to report_* API on Neovim 0.7", function()
+			package.loaded["zoom.health"] = nil
+			local called = false
+			local original = vim.health
+			vim.health = {
+				report_start = function() end,
+				report_ok = function() called = true end,
+				report_warn = function() end,
+				report_error = function() end,
+				report_info = function() end,
+			}
+			local health = require("zoom.health")
+			assert.has_no.errors(function()
+				health.check()
+			end)
+			assert.is_true(called)
+			vim.health = original
+			package.loaded["zoom.health"] = nil
+		end)
 	end)
 end)
