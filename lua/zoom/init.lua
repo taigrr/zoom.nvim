@@ -60,6 +60,10 @@ local function restore_layout(layout)
 	end
 end
 
+local function delete_keymap(lhs)
+	pcall(vim.keymap.del, "n", lhs)
+end
+
 --- Zoom the current window (or restore if already zoomed)
 ---@return nil
 function M.zoom()
@@ -130,11 +134,11 @@ function M.setup(opts)
 	current_keymap = config.key
 
 	-- Create user command
-	vim.api.nvim_create_user_command("ZoomToggle", M.toggle, { desc = "Toggle window zoom" })
-	vim.api.nvim_create_user_command("ZoomRestore", M.restore, { desc = "Restore window layout" })
+	vim.api.nvim_create_user_command("ZoomToggle", M.toggle, { desc = "Toggle window zoom", force = true })
+	vim.api.nvim_create_user_command("ZoomRestore", M.restore, { desc = "Restore window layout", force = true })
 
 	if previous_keymap and previous_keymap ~= current_keymap then
-		vim.keymap.del("n", previous_keymap)
+		delete_keymap(previous_keymap)
 	end
 
 	-- Bind keymap if configured
