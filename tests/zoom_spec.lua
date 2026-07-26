@@ -174,6 +174,34 @@ describe("zoom.nvim", function()
 		end)
 	end)
 
+	describe("WinClosed reset", function()
+		local function win_closed_callback()
+			for _, entry in ipairs(autocmd_events) do
+				if entry.event == "WinClosed" then
+					return entry.opts.callback
+				end
+			end
+		end
+
+		it("resets zoom state when an original window closes", function()
+			zoom.zoom()
+			assert.is_true(zoom.is_zoomed())
+			_G._zoom_test_events = {}
+			win_closed_callback()({ match = "1000" })
+			assert.is_false(zoom.is_zoomed())
+			assert.equals(1, #_G._zoom_test_events)
+			assert.equals("ZoomChanged", _G._zoom_test_events[1].pattern)
+		end)
+
+		it("ignores closing of an unrelated window", function()
+			zoom.zoom()
+			_G._zoom_test_events = {}
+			win_closed_callback()({ match = "9999" })
+			assert.is_true(zoom.is_zoomed())
+			assert.equals(0, #_G._zoom_test_events)
+		end)
+	end)
+
 	describe("toggle", function()
 		it("is an alias for zoom", function()
 			zoom.toggle()
@@ -330,18 +358,36 @@ describe("zoom.nvim", function()
 			package.loaded["zoom.health"] = nil
 		end)
 
-		it("degrades gracefully when no health API is available", function()
+		it("uses report_* aliases on vim.health (Neovim 0.8-0.9)", function()
 			package.loaded["zoom.health"] = nil
-			package.loaded["health"] = nil
+			local started = false
 			local original = vim.health
-			vim.health = nil
-			package.loaded["health"] = {}
+			vim.health = {
+				report_start = function() started = true end,
+				report_ok = function() end,
+				report_warn = function() end,
+				report_error = function() end,
+				report_info = function() end,
+			}
+			local health = require("zoom.health")
+			assert.has_no.errors(function()
+				health.check()
+			end)
+			assert.is_true(started)
+			vim.health = original
+			package.loaded["zoom.health"] = nil
+		end)
+
+		it("does not crash on a partial health API", function()
+			package.loaded["zoom.health"] = nil
+			local original = vim.health
+			-- start present but the rest missing
+			vim.health = { start = function() end }
 			local health = require("zoom.health")
 			assert.has_no.errors(function()
 				health.check()
 			end)
 			vim.health = original
-			package.loaded["health"] = nil
 			package.loaded["zoom.health"] = nil
 		end)
 	end)

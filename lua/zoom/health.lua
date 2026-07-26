@@ -9,18 +9,20 @@ local function get_health()
 		local ok, mod = pcall(require, "health")
 		health = ok and mod or {}
 	end
+	local noop = function() end
 	return {
-		start = health.start or health.report_start,
-		ok = health.ok or health.report_ok,
-		warn = health.warn or health.report_warn,
-		error = health.error or health.report_error,
-		info = health.info or health.report_info,
+		available = (health.start or health.report_start) ~= nil,
+		start = health.start or health.report_start or noop,
+		ok = health.ok or health.report_ok or noop,
+		warn = health.warn or health.report_warn or noop,
+		error = health.error or health.report_error or noop,
+		info = health.info or health.report_info or noop,
 	}
 end
 
 function M.check()
 	local h = get_health()
-	if not h.start then
+	if not h.available then
 		return
 	end
 	h.start("zoom.nvim")
