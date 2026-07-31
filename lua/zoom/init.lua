@@ -54,10 +54,12 @@ end
 
 --- Restore a saved window layout
 ---@param layout string|nil
+---@return boolean
 local function restore_layout(layout)
 	if layout then
-		vim.cmd(layout)
+		return pcall(vim.cmd, layout)
 	end
+	return true
 end
 
 local function delete_keymap(lhs)
@@ -103,11 +105,15 @@ function M.restore()
 		return
 	end
 
-	restore_layout(state.saved_layout)
+	local restored = restore_layout(state.saved_layout)
 	state.is_zoomed = false
 	state.saved_layout = nil
 	state.zoomed_buf = nil
 	state.original_wins = {}
+
+	if not restored and config.notify then
+		vim.notify("Failed to restore saved zoom layout", vim.log.levels.WARN)
+	end
 
 	vim.api.nvim_exec_autocmds("User", { pattern = "ZoomChanged" })
 end
