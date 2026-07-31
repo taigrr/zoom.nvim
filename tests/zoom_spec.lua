@@ -6,6 +6,7 @@ local user_commands = {}
 local notifications = {}
 local keymaps = {}
 local deleted_keymaps = {}
+local cmd_error = nil
 
 _G.vim = {
 	fn = {
@@ -16,7 +17,11 @@ _G.vim = {
 		end,
 		has = function() return 1 end,
 	},
-	cmd = function() end,
+	cmd = function(cmd)
+		if cmd == cmd_error then
+			error("layout restore failed")
+		end
+	end,
 	api = {
 		nvim_get_current_buf = function() return 1 end,
 		nvim_list_wins = function() return { 1000, 1001 } end,
@@ -72,6 +77,7 @@ local function load_zoom()
 	notifications = {}
 	keymaps = {}
 	deleted_keymaps = {}
+	cmd_error = nil
 	-- Restore pristine mocks so per-test monkey-patches never leak, even if a
 	-- prior test failed before restoring them.
 	vim.fn.winnr = function(arg)
@@ -169,6 +175,22 @@ describe("zoom.nvim", function()
 			_G._zoom_test_events = {}
 			zoom.restore()
 			assert.is_false(zoom.is_zoomed())
+			assert.equals(1, #_G._zoom_test_events)
+			assert.equals("ZoomChanged", _G._zoom_test_events[1].pattern)
+		end)
+
+		it("clears zoom state when the saved layout fails to restore", function()
+			zoom.zoom()
+			cmd_error = "1resize 30|vert 1resize 80|"
+			_G._zoom_test_events = {}
+
+			assert.has_no.errors(function()
+				zoom.restore()
+			end)
+
+			assert.is_false(zoom.is_zoomed())
+			assert.equals("Failed to restore saved zoom layout", notifications[1].msg)
+			assert.equals(vim.log.levels.WARN, notifications[1].level)
 			assert.equals(1, #_G._zoom_test_events)
 			assert.equals("ZoomChanged", _G._zoom_test_events[1].pattern)
 		end)
