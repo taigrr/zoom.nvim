@@ -161,6 +161,19 @@ describe("zoom.nvim", function()
 				return 1
 			end
 		end)
+
+		it("clears zoom state when maximize fails", function()
+			cmd_error = "wincmd |"
+
+			assert.has_no.errors(function()
+				zoom.zoom()
+			end)
+
+			assert.is_false(zoom.is_zoomed())
+			assert.equals("Failed to zoom current window", notifications[1].msg)
+			assert.equals(vim.log.levels.WARN, notifications[1].level)
+			assert.equals(0, #_G._zoom_test_events)
+		end)
 	end)
 
 	describe("restore", function()
