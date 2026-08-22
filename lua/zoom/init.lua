@@ -46,6 +46,13 @@ local state = {
 	original_wins = {},
 }
 
+local function clear_state()
+	state.is_zoomed = false
+	state.saved_layout = nil
+	state.zoomed_buf = nil
+	state.original_wins = {}
+end
+
 --- Save the current window layout
 ---@return string
 local function save_layout()
@@ -91,8 +98,16 @@ function M.zoom()
 		state.is_zoomed = true
 
 		-- Maximize current window
-		vim.cmd("wincmd _")
-		vim.cmd("wincmd |")
+		local height_ok = pcall(vim.cmd, "wincmd _")
+		local width_ok = height_ok and pcall(vim.cmd, "wincmd |")
+		if not (height_ok and width_ok) then
+			restore_layout(state.saved_layout)
+			clear_state()
+			if config.notify then
+				vim.notify("Failed to zoom current window", vim.log.levels.WARN)
+			end
+			return
+		end
 
 		vim.api.nvim_exec_autocmds("User", { pattern = "ZoomChanged" })
 	end
@@ -106,10 +121,7 @@ function M.restore()
 	end
 
 	local restored = restore_layout(state.saved_layout)
-	state.is_zoomed = false
-	state.saved_layout = nil
-	state.zoomed_buf = nil
-	state.original_wins = {}
+	clear_state()
 
 	if not restored and config.notify then
 		vim.notify("Failed to restore saved zoom layout", vim.log.levels.WARN)
@@ -160,10 +172,7 @@ function M.setup(opts)
 			if state.is_zoomed then
 				local closed_win = tonumber(args.match)
 				if closed_win and state.original_wins[closed_win] then
-					state.is_zoomed = false
-					state.saved_layout = nil
-					state.zoomed_buf = nil
-					state.original_wins = {}
+					clear_state()
 					vim.api.nvim_exec_autocmds("User", { pattern = "ZoomChanged" })
 				end
 			end

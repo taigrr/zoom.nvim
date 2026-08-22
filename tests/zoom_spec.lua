@@ -7,6 +7,7 @@ local notifications = {}
 local keymaps = {}
 local deleted_keymaps = {}
 local cmd_error = nil
+local executed_cmds = {}
 
 _G.vim = {
 	fn = {
@@ -18,6 +19,7 @@ _G.vim = {
 		has = function() return 1 end,
 	},
 	cmd = function(cmd)
+		table.insert(executed_cmds, cmd)
 		if cmd == cmd_error then
 			error("layout restore failed")
 		end
@@ -78,6 +80,7 @@ local function load_zoom()
 	keymaps = {}
 	deleted_keymaps = {}
 	cmd_error = nil
+	executed_cmds = {}
 	-- Restore pristine mocks so per-test monkey-patches never leak, even if a
 	-- prior test failed before restoring them.
 	vim.fn.winnr = function(arg)
@@ -160,6 +163,46 @@ describe("zoom.nvim", function()
 				if arg == "$" then return 2 end
 				return 1
 			end
+		end)
+
+		it("clears zoom state when maximize fails", function()
+			cmd_error = "wincmd |"
+
+			assert.has_no.errors(function()
+				zoom.zoom()
+			end)
+
+			assert.is_false(zoom.is_zoomed())
+			assert.equals("Failed to zoom current window", notifications[1].msg)
+			assert.equals(vim.log.levels.WARN, notifications[1].level)
+			assert.equals(0, #_G._zoom_test_events)
+		end)
+
+		it("rolls back the saved layout when maximize partially fails", function()
+			cmd_error = "wincmd |"
+
+			zoom.zoom()
+
+			local restored = false
+			for _, cmd in ipairs(executed_cmds) do
+				if cmd == "1resize 30|vert 1resize 80|" then
+					restored = true
+				end
+			end
+			assert.is_true(restored)
+			assert.is_false(zoom.is_zoomed())
+		end)
+
+		it("clears zoom state when height maximize fails", function()
+			cmd_error = "wincmd _"
+
+			assert.has_no.errors(function()
+				zoom.zoom()
+			end)
+
+			assert.is_false(zoom.is_zoomed())
+			assert.equals("Failed to zoom current window", notifications[1].msg)
+			assert.equals(0, #_G._zoom_test_events)
 		end)
 	end)
 
