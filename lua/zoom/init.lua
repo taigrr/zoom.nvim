@@ -101,6 +101,7 @@ function M.zoom()
 		local height_ok = pcall(vim.cmd, "wincmd _")
 		local width_ok = height_ok and pcall(vim.cmd, "wincmd |")
 		if not (height_ok and width_ok) then
+			restore_layout(state.saved_layout)
 			clear_state()
 			if config.notify then
 				vim.notify("Failed to zoom current window", vim.log.levels.WARN)
