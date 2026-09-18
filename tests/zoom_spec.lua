@@ -8,6 +8,7 @@ local keymaps = {}
 local deleted_keymaps = {}
 local cmd_error = nil
 local executed_cmds = {}
+local echoed_messages = {}
 
 _G.vim = {
 	fn = {
@@ -43,6 +44,9 @@ _G.vim = {
 			-- track fired events for assertions
 			_G._zoom_test_events = _G._zoom_test_events or {}
 			table.insert(_G._zoom_test_events, { event = event, pattern = opts.pattern })
+		end,
+		nvim_echo = function(chunks, history, opts)
+			table.insert(echoed_messages, { chunks = chunks, history = history, opts = opts })
 		end,
 	},
 	keymap = {
@@ -81,6 +85,7 @@ local function load_zoom()
 	deleted_keymaps = {}
 	cmd_error = nil
 	executed_cmds = {}
+	echoed_messages = {}
 	-- Restore pristine mocks so per-test monkey-patches never leak, even if a
 	-- prior test failed before restoring them.
 	vim.fn.winnr = function(arg)
@@ -120,6 +125,10 @@ describe("zoom.nvim", function()
 			assert.is_not_nil(user_commands["ZoomRestore"])
 		end)
 
+		it("creates ZoomStatus command", function()
+			assert.is_not_nil(user_commands["ZoomStatus"])
+		end)
+
 		it("can be called repeatedly without duplicate command errors", function()
 			assert.has_no.errors(function()
 				zoom.setup()
@@ -132,6 +141,26 @@ describe("zoom.nvim", function()
 	describe("is_zoomed", function()
 		it("returns false initially", function()
 			assert.is_false(zoom.is_zoomed())
+		end)
+	end)
+
+	describe("status", function()
+		it("returns not zoomed initially", function()
+			assert.equals("not zoomed", zoom.status())
+		end)
+
+		it("returns zoomed after zooming", function()
+			zoom.zoom()
+			assert.equals("zoomed", zoom.status())
+		end)
+
+		it("prints the current status from ZoomStatus", function()
+			user_commands["ZoomStatus"].fn()
+			assert.equals("not zoomed", echoed_messages[1].chunks[1][1])
+
+			zoom.zoom()
+			user_commands["ZoomStatus"].fn()
+			assert.equals("zoomed", echoed_messages[2].chunks[1][1])
 		end)
 	end)
 
