@@ -22,12 +22,14 @@ vim.keymap.set('n', '<leader>z', '<cmd>ZoomToggle<cr>')
 
 - `:ZoomToggle` — maximize or restore
 - `:ZoomRestore` — restore layout
+- `:ZoomStatus` — print the current zoom state
 
 ## API
 
 ```lua
 require('zoom').toggle()     -- toggle zoom
 require('zoom').is_zoomed()  -- check state
+require('zoom').status()     -- "zoomed" or "not zoomed"
 ```
 
 ## Events

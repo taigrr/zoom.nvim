@@ -14,6 +14,7 @@
 ---@field restore fun()
 ---@field toggle fun()
 ---@field is_zoomed fun(): boolean
+---@field status fun(): string
 local M = {}
 
 ---@type ZoomOpts
@@ -136,6 +137,15 @@ function M.is_zoomed()
 	return state.is_zoomed
 end
 
+--- Return the current zoom state as a human-readable status
+---@return string
+function M.status()
+	if state.is_zoomed then
+		return "zoomed"
+	end
+	return "not zoomed"
+end
+
 --- Toggle zoom (alias for zoom)
 ---@return nil
 function M.toggle()
@@ -155,6 +165,9 @@ function M.setup(opts)
 	-- Create user command
 	vim.api.nvim_create_user_command("ZoomToggle", M.toggle, { desc = "Toggle window zoom", force = true })
 	vim.api.nvim_create_user_command("ZoomRestore", M.restore, { desc = "Restore window layout", force = true })
+	vim.api.nvim_create_user_command("ZoomStatus", function()
+		vim.api.nvim_echo({ { M.status(), "Normal" } }, false, {})
+	end, { desc = "Show window zoom status", force = true })
 
 	if previous_keymap and previous_keymap ~= current_keymap then
 		delete_keymap(previous_keymap)
