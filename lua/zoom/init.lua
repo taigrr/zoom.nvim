@@ -5,7 +5,6 @@
 ---@class ZoomState
 ---@field is_zoomed boolean
 ---@field saved_layout string|nil
----@field zoomed_buf integer|nil
 ---@field original_wins table<integer, boolean>
 
 ---@class ZoomModule
@@ -43,14 +42,12 @@ local current_keymap = nil
 local state = {
 	is_zoomed = false,
 	saved_layout = nil,
-	zoomed_buf = nil,
 	original_wins = {},
 }
 
 local function clear_state()
 	state.is_zoomed = false
 	state.saved_layout = nil
-	state.zoomed_buf = nil
 	state.original_wins = {}
 end
 
@@ -91,7 +88,6 @@ function M.zoom()
 		end
 
 		state.saved_layout = save_layout()
-		state.zoomed_buf = vim.api.nvim_get_current_buf()
 		state.original_wins = {}
 		for _, win in ipairs(vim.api.nvim_list_wins()) do
 			state.original_wins[win] = true

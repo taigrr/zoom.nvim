@@ -76,7 +76,7 @@ The plugin maintains internal state:
 local state = {
   is_zoomed = false,      -- Current zoom status
   saved_layout = nil,     -- winrestcmd() output for restore
-  zoomed_buf = nil,       -- Buffer that was zoomed (currently unused)
+  original_wins = {},     -- Windows present before zooming
 }
 ```
 
@@ -88,7 +88,7 @@ State is reset when:
 
 1. **Single window check**: `zoom()` exits early if only one window exists
 2. **WinClosed resets state**: If any window closes while zoomed, state resets (may not restore to original layout)
-3. **zoomed_buf tracked but unused**: The buffer ID is saved but not currently used for validation
+3. **Original windows tracked**: Only closing a window from the original layout resets zoom state
 4. **toggle() is just zoom()**: They're functionally identical since `zoom()` already toggles
 
 ## Testing
