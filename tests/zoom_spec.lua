@@ -27,7 +27,11 @@ _G.vim = {
 	end,
 	api = {
 		nvim_get_current_buf = function() return 1 end,
-		nvim_list_wins = function() return { 1000, 1001 } end,
+		nvim_list_wins = function() return { 1000, 1001, 2000 } end,
+		nvim_tabpage_list_wins = function(tabpage)
+			assert.equals(0, tabpage)
+			return { 1000, 1001 }
+		end,
 		nvim_create_user_command = function(name, fn, opts)
 			if user_commands[name] and not opts.force then
 				error("Command already exists: " .. name)
@@ -285,6 +289,18 @@ describe("zoom.nvim", function()
 			assert.is_false(zoom.is_zoomed())
 			assert.equals(1, #_G._zoom_test_events)
 			assert.equals("ZoomChanged", _G._zoom_test_events[1].pattern)
+		end)
+
+		it("preserves zoom when a window in another tab closes", function()
+			zoom.zoom()
+			_G._zoom_test_events = {}
+			win_closed_callback()({ match = "2000" })
+			assert.is_true(zoom.is_zoomed())
+			assert.equals(0, #_G._zoom_test_events)
+
+			zoom.restore()
+			assert.is_false(zoom.is_zoomed())
+			assert.equals("1resize 30|vert 1resize 80|", executed_cmds[#executed_cmds])
 		end)
 
 		it("ignores closing of an unrelated window", function()

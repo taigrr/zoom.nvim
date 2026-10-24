@@ -89,7 +89,7 @@ function M.zoom()
 
 		state.saved_layout = save_layout()
 		state.original_wins = {}
-		for _, win in ipairs(vim.api.nvim_list_wins()) do
+		for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
 			state.original_wins[win] = true
 		end
 		state.is_zoomed = true
