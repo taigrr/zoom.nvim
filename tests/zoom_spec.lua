@@ -235,6 +235,60 @@ describe("zoom.nvim", function()
 		end)
 	end)
 
+	describe("failure recovery", function()
+		it("can zoom again after a failed maximize", function()
+			cmd_error = "wincmd |"
+			zoom.zoom()
+			cmd_error = nil
+
+			zoom.zoom()
+			assert.is_true(zoom.is_zoomed())
+			assert.equals(1, #_G._zoom_test_events)
+			zoom.restore()
+			assert.is_false(zoom.is_zoomed())
+			assert.equals("1resize 30|vert 1resize 80|", executed_cmds[#executed_cmds])
+		end)
+
+		it("does not retry a failed restore with stale layout state", function()
+			zoom.zoom()
+			cmd_error = "1resize 30|vert 1resize 80|"
+			zoom.restore()
+			local command_count = #executed_cmds
+			local event_count = #_G._zoom_test_events
+
+			zoom.restore()
+			assert.equals(command_count, #executed_cmds)
+			assert.equals(event_count, #_G._zoom_test_events)
+			cmd_error = nil
+			zoom.zoom()
+			assert.is_true(zoom.is_zoomed())
+		end)
+
+		it("suppresses maximize failure warnings when notify is false", function()
+			zoom.setup({ notify = false })
+			cmd_error = "wincmd |"
+			zoom.zoom()
+
+			assert.is_false(zoom.is_zoomed())
+			assert.equals(0, #notifications)
+			assert.equals(0, #_G._zoom_test_events)
+			assert.equals("1resize 30|vert 1resize 80|", executed_cmds[#executed_cmds])
+		end)
+
+		it("suppresses restore failure warnings but still emits the state change", function()
+			zoom.setup({ notify = false })
+			zoom.zoom()
+			_G._zoom_test_events = {}
+			cmd_error = "1resize 30|vert 1resize 80|"
+			zoom.restore()
+
+			assert.is_false(zoom.is_zoomed())
+			assert.equals(0, #notifications)
+			assert.equals(1, #_G._zoom_test_events)
+			assert.equals("ZoomChanged", _G._zoom_test_events[1].pattern)
+		end)
+	end)
+
 	describe("restore", function()
 		it("does nothing when not zoomed", function()
 			zoom.restore()
