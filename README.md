@@ -24,6 +24,8 @@ vim.keymap.set('n', '<leader>z', '<cmd>ZoomToggle<cr>')
 - `:ZoomRestore` — restore layout
 - `:ZoomStatus` — print the current zoom state
 
+Restoring from another tab applies the saved layout to the original tab without changing your current tab.
+
 ## API
 
 ```lua

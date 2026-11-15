@@ -4,6 +4,7 @@
 
 ---@class ZoomState
 ---@field is_zoomed boolean
+---@field zoomed_win integer|nil
 ---@field saved_layout string|nil
 ---@field original_wins table<integer, boolean>
 
@@ -47,6 +48,7 @@ local state = {
 
 local function clear_state()
 	state.is_zoomed = false
+	state.zoomed_win = nil
 	state.saved_layout = nil
 	state.original_wins = {}
 end
@@ -62,7 +64,9 @@ end
 ---@return boolean
 local function restore_layout(layout)
 	if layout then
-		return pcall(vim.cmd, layout)
+		return pcall(vim.api.nvim_win_call, state.zoomed_win, function()
+			vim.cmd(layout)
+		end)
 	end
 	return true
 end
@@ -87,6 +91,7 @@ function M.zoom()
 			return
 		end
 
+		state.zoomed_win = vim.api.nvim_get_current_win()
 		state.saved_layout = save_layout()
 		state.original_wins = {}
 		for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do

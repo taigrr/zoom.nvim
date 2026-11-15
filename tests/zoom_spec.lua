@@ -9,6 +9,8 @@ local deleted_keymaps = {}
 local cmd_error = nil
 local executed_cmds = {}
 local echoed_messages = {}
+local current_win = 1000
+local command_windows = {}
 
 _G.vim = {
 	fn = {
@@ -21,12 +23,22 @@ _G.vim = {
 	},
 	cmd = function(cmd)
 		table.insert(executed_cmds, cmd)
+		table.insert(command_windows, current_win)
 		if cmd == cmd_error then
 			error("layout restore failed")
 		end
 	end,
 	api = {
 		nvim_get_current_buf = function() return 1 end,
+		nvim_get_current_win = function() return current_win end,
+		nvim_win_call = function(win, callback)
+			local previous_win = current_win
+			current_win = win
+			local ok, result = pcall(callback)
+			current_win = previous_win
+			if not ok then error(result) end
+			return result
+		end,
 		nvim_list_wins = function() return { 1000, 1001, 2000 } end,
 		nvim_tabpage_list_wins = function(tabpage)
 			assert.equals(0, tabpage)
@@ -90,6 +102,8 @@ local function load_zoom()
 	cmd_error = nil
 	executed_cmds = {}
 	echoed_messages = {}
+	current_win = 1000
+	command_windows = {}
 	-- Restore pristine mocks so per-test monkey-patches never leak, even if a
 	-- prior test failed before restoring them.
 	vim.fn.winnr = function(arg)
@@ -294,6 +308,28 @@ describe("zoom.nvim", function()
 	end)
 
 	describe("restore", function()
+		it("restores in the original window after switching tabs", function()
+			zoom.zoom()
+			current_win = 2000
+
+			zoom.restore()
+
+			assert.equals(1000, command_windows[#command_windows])
+			assert.equals(2000, current_win)
+			assert.is_false(zoom.is_zoomed())
+		end)
+
+		it("toggles off in the original window after switching windows", function()
+			zoom.zoom()
+			current_win = 1001
+
+			zoom.toggle()
+
+			assert.equals(1000, command_windows[#command_windows])
+			assert.equals(1001, current_win)
+			assert.is_false(zoom.is_zoomed())
+		end)
+
 		it("does nothing when not zoomed", function()
 			zoom.restore()
 			assert.is_false(zoom.is_zoomed())
